@@ -1,0 +1,118 @@
+---
+import { t, dateLabel } from '../lib/i18n';
+import type { Locale } from '../types/config';
+import type { BenefitType, ReferralStatus } from '../lib/referral';
+
+interface Props {
+  lang: Locale;
+  brand?: string;
+  code?: string;
+  referralUrl?: string;
+  benefit?: string;
+  benefitType?: BenefitType;
+  expires?: Date;
+  status?: ReferralStatus;
+  verifiedAt?: Date;
+}
+
+const {
+  lang,
+  brand,
+  code,
+  referralUrl,
+  benefit,
+  expires,
+  status = 'aktif',
+  verifiedAt,
+} = Astro.props;
+const ui = t(lang);
+const expired = status === 'habis';
+const title = brand ? `${ui.referralTitle} ${brand}` : ui.referralTitle;
+const dates = [
+  expires
+    ? `${ui.referralExpires} ${dateLabel(expires, lang)}`
+    : ui.referralNoExpiry,
+  verifiedAt
+    ? `${ui.referralVerified} ${dateLabel(verifiedAt, lang)}`
+    : undefined,
+].filter(Boolean);
+---
+
+<section
+  class:list={['referral-box', { 'is-expired': expired }]}
+  aria-labelledby="referral-title"
+  data-referral-box
+  data-copied={ui.referralCopied}
+  data-copy-failed={ui.referralCopyFailed}
+>
+  <div class="referral-intro">
+    <h2 id="referral-title">{title}</h2>
+    {benefit && <p>{benefit}</p>}
+  </div>
+
+  {code && (
+    <div class="referral-code-line">
+      <code data-referral-code>{code}</code>
+      <button type="button" data-referral-copy aria-label={ui.copyReferral}>
+        <span data-referral-copy-label aria-live="polite">
+          {ui.copyReferral}
+        </span>
+      </button>
+    </div>
+  )}
+
+  <div class="referral-foot">
+    <p>
+      {expired && <strong>{ui.statusExpired}. </strong>}
+      {dates.join(' · ')}
+    </p>
+    {referralUrl && !expired && (
+      <a href={referralUrl} target="_blank" rel="noopener nofollow sponsored">
+        {ui.claimCode}
+      </a>
+    )}
+  </div>
+</section>
+
+<script>
+  const copyText = async (text: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.append(area);
+    area.select();
+    const ok = document.execCommand('copy');
+    area.remove();
+    if (!ok) throw new Error('copy failed');
+  };
+
+  for (const box of document.querySelectorAll<HTMLElement>(
+    '[data-referral-box]',
+  )) {
+    const button = box.querySelector<HTMLElement>('[data-referral-copy]');
+    const code = box.querySelector<HTMLElement>('[data-referral-code]');
+    const label = box.querySelector<HTMLElement>('[data-referral-copy-label]');
+    if (!button || !code || !label) continue;
+    const idle = label.textContent ?? '';
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    button.addEventListener('click', async () => {
+      try {
+        await copyText(code.textContent?.trim() ?? '');
+      } catch {
+        label.textContent = box.dataset.copyFailed || idle;
+        clearTimeout(timer);
+        timer = setTimeout(() => (label.textContent = idle), 2500);
+        return;
+      }
+      label.textContent = box.dataset.copied || idle;
+      clearTimeout(timer);
+      timer = setTimeout(() => (label.textContent = idle), 2000);
+    });
+  }
+</script>

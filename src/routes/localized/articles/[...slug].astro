@@ -1,0 +1,371 @@
+---
+import { pageLocale, routeLocales } from '../../../lib/i18n';
+import { localeInfo } from '../../../lib/translations';
+import { postPath } from '../../../lib/post-path';
+import { render } from 'astro:content';
+import config from '../../../lib/config';
+import Layout from '../../../layouts/Layout.astro';
+import ArticleMeta from '../../../components/ArticleMeta.astro';
+import ArticleUpdated from '../../../components/ArticleUpdated.astro';
+import ShareMenu from '../../../components/ShareMenu.astro';
+import ArticleToc from '../../../components/ArticleToc.astro';
+import ReferralBox from '../../../components/ReferralBox.astro';
+import ArticleSummary from '../../../components/ArticleSummary.astro';
+import { summaryHtml } from '../../../lib/summary';
+import {
+  articlesFor,
+  referralsFor,
+  articleHref,
+  taxonomyLabels,
+  encodedSlug,
+  referralFor,
+  supportsFor,
+  isReferral,
+  type Entry,
+} from '../../../lib/content';
+import { articleFeatures, articleDisplay } from '../../../lib/article-options';
+import { canDiscover } from '../../../lib/policy';
+import { isRealTranslation } from '../../../lib/locale-routing';
+import { t, href, localize } from '../../../lib/i18n';
+import { contentImage } from '../../../lib/content-image';
+import { absoluteUrl, pageJsonLd, seoImage } from '../../../lib/seo';
+import {
+  articleBrand,
+  referralBrand,
+  referralIndustry,
+} from '../../../lib/referral';
+import { publicRoute } from '../../../lib/public-routes';
+import type { Locale } from '../../../types/config';
+
+export async function getStaticPaths({
+  routePattern,
+}: import('astro').GetStaticPathsOptions) {
+  const paths = [];
+  const referralRoute = routePattern.split('/').includes(publicRoute('referrals'));
+  for (const lang of routeLocales(routePattern)) {
+    const entries = referralRoute
+      ? await referralsFor(lang, true)
+      : await articlesFor(lang, true);
+    for (const entry of entries) {
+      if (!referralRoute && /^page\//.test(entry.data.slug))
+        throw new Error(
+          'Article slugs beginning with page/ are reserved for pagination.',
+        );
+      paths.push({
+        params: {
+          slug: referralRoute
+            ? entry.data.slug
+            : postPath(
+                entry.data,
+                config.posts.pathPrefix,
+                config.site.timezone,
+              ),
+        },
+        props: { entry },
+      });
+    }
+  }
+  return paths;
+}
+interface Props {
+  entry: Entry;
+}
+const { entry } = Astro.props;
+const lang = pageLocale(Astro.routePattern);
+const ui = t(lang);
+const display = articleDisplay(entry.data, config.article.display);
+const features = articleFeatures(entry.data, config.article);
+const labels = await taxonomyLabels(lang);
+const { Content, headings } = await render(entry);
+const discoverable = canDiscover(entry.data);
+const otherEntries = (
+  isReferral(entry)
+    ? await referralsFor(lang)
+    : await articlesFor(lang)
+)
+  .filter((other) => canDiscover(other.data))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const index = otherEntries.findIndex((other) => other.id === entry.id);
+const newer = index > 0 ? otherEntries[index - 1] : undefined;
+const older = index >= 0 ? otherEntries[index + 1] : undefined;
+const alternatePaths: Partial<Record<Locale, string>> = {};
+const translationPaths: Partial<Record<Locale, string>> = {};
+for (const locale of config.site.locales) {
+  const translated = isReferral(entry)
+    ? (await referralsFor(locale, true)).find(
+        (other) => other.data._key === entry.data._key,
+      )
+    : (await articlesFor(locale, true)).find(
+        (other) => other.data._key === entry.data._key,
+      );
+  if (translated) {
+    alternatePaths[locale] = articleHref(translated, locale);
+    if (isRealTranslation(translated, locale))
+      translationPaths[locale] = articleHref(translated, locale);
+  }
+}
+const articlePath = articleHref(entry, lang);
+const cover = contentImage(entry.data.image, articlePath);
+const shareImage = features.shareCover
+  ? href(lang, `og/${encodedSlug(entry.data.slug)}.png`)
+  : cover
+    ? new URL(cover, new URL(articlePath, config.site.url)).href
+    : undefined;
+const summary = await summaryHtml(entry.data.summary);
+const brand = isReferral(entry)
+  ? referralBrand(entry.data)
+  : articleBrand(entry.data);
+// Silo relations feed structured data only; readers see ordinary articles.
+const linkedReferral = isReferral(entry) ? undefined : await referralFor(entry, lang);
+const supports = isReferral(entry) ? await supportsFor(entry, lang) : [];
+const industry = isReferral(entry) ? referralIndustry(entry.data) : undefined;
+const expired = isReferral(entry) && entry.data.status === 'habis';
+const brandHref = brand
+  ? href(lang, `${publicRoute('categories')}/${encodedSlug(brand)}/`)
+  : undefined;
+const breadcrumbs = [
+  {
+    name: localize(config.text.tabs.search, lang),
+    url: absoluteUrl(href(lang)),
+  },
+  ...(industry
+    ? [
+        {
+          name: labels.categories[industry] ?? industry,
+          url: absoluteUrl(
+            href(
+              lang,
+              `${publicRoute('categories')}/${encodedSlug(industry)}/`,
+            ),
+          ),
+        },
+      ]
+    : []),
+  ...(brand
+    ? [
+        {
+          name: labels.categories[brand] ?? brand,
+          url: absoluteUrl(brandHref!),
+        },
+      ]
+    : []),
+  { name: entry.data.title, url: absoluteUrl(articlePath) },
+];
+const graph = pageJsonLd({
+  lang,
+  url: absoluteUrl(articlePath),
+  title: entry.data.title,
+  description: entry.data.description,
+  image: seoImage(shareImage, entry.data.title, articlePath),
+  type: 'article',
+  publishedTime: entry.data.date,
+  modifiedTime: entry.data.updated ?? entry.data.date,
+  section: brand ?? entry.data.categories[0],
+  tags: entry.data.tags,
+  breadcrumbs,
+});
+const articleIndex = graph['@graph'].findIndex(
+  (node) =>
+    typeof node === 'object' &&
+    node !== null &&
+    (node as { '@type'?: string })['@type'] === 'Article',
+);
+const graphWithSilo =
+  articleIndex < 0
+    ? graph
+    : {
+        ...graph,
+        '@graph': graph['@graph'].map((node, index) =>
+          index !== articleIndex
+            ? node
+            : {
+                ...node,
+                ...(brand && brandHref
+                  ? {
+                      isPartOf: {
+                        '@id': `${absoluteUrl(brandHref)}#collection`,
+                      },
+                    }
+                  : {}),
+                ...(isReferral(entry)
+                  ? {
+                      hasPart: supports.map((support) => ({
+                        '@type': 'Article',
+                        '@id': `${absoluteUrl(articleHref(support, lang))}#page`,
+                      })),
+                    }
+                  : {}),
+                ...(linkedReferral
+                  ? {
+                      isBasedOn: {
+                        '@type': 'Article',
+                        '@id': `${absoluteUrl(articleHref(linkedReferral, lang))}#page`,
+                      },
+                    }
+                  : {}),
+                ...(isReferral(entry) && entry.data.benefit
+                  ? {
+                      about: { '@type': 'Thing', name: entry.data.benefit },
+                    }
+                  : {}),
+              },
+        ),
+      };
+---
+
+<Layout
+  lang={lang}
+  title={entry.data.title}
+  description={entry.data.description}
+  article
+  pageType="article"
+  active={isReferral(entry) ? 'referrals' : 'posts'}
+  publishedTime={entry.data.date}
+  modifiedTime={entry.data.updated ?? entry.data.date}
+  section={brand ?? entry.data.categories[0]}
+  tags={entry.data.tags}
+  breadcrumbs={breadcrumbs}
+  noindex={!discoverable || expired}
+  schema={graphWithSilo}
+  alternatePaths={alternatePaths}
+  translationPaths={translationPaths}
+  shareImage={shareImage}
+  features={features}
+>
+  {features.toc && <ArticleToc headings={headings} lang={lang} />}
+  <article
+    class="article-column"
+    data-search-record={discoverable ? 'posts' : undefined}
+    data-search-title={entry.data.title}
+    data-search-description={entry.data.description}
+    data-pagefind-body={discoverable ? '' : undefined}
+    lang={localeInfo(entry.data.lang).lang}
+  >
+    {cover && (
+      <img
+        class="article-cover"
+        src={cover}
+        alt={entry.data.title}
+        width="1000"
+        height="560"
+      />
+    )}
+    <header class="article-header">
+      {display.title && (
+        <div class="article-title-block">
+          <div class="eyebrow" data-pagefind-ignore>
+            {entry.data.categories.map((category) => (
+              <a
+                href={href(
+                  lang,
+                  `${publicRoute('categories')}/${encodedSlug(category)}/`,
+                )}
+              >
+                {labels.categories[category] ?? category}
+              </a>
+            ))}
+            {entry.data.draft && <span class="status-label">{ui.draft}</span>}
+            {entry.data.hidden && <span class="status-label">{ui.hidden}</span>}
+          </div>
+          <h1 data-pagefind-meta="title">{entry.data.title}</h1>
+          {entry.data.description && <p>{entry.data.description}</p>}
+        </div>
+      )}
+      <ArticleMeta lang={lang} entry={entry} display={display} />
+    </header>
+    {entry.data._locale && entry.data._locale !== lang && (
+      <p class="article-note" data-pagefind-ignore>
+        {ui.fallback}
+      </p>
+    )}
+    {entry.data.draft && (
+      <p class="article-note" data-pagefind-ignore>
+        {ui.draftNotice}
+      </p>
+    )}
+
+    {summary && (
+      <div data-pagefind-ignore>
+        <ArticleSummary lang={lang} html={summary} />
+      </div>
+    )}
+
+    {isReferral(entry) && (
+      <ReferralBox
+        lang={lang}
+        brand={brand ? (labels.categories[brand] ?? brand) : undefined}
+        code={entry.data.code}
+        referralUrl={entry.data.referralUrl}
+        benefit={entry.data.benefit}
+        benefitType={entry.data.benefitType}
+        expires={entry.data.expires}
+        status={entry.data.status}
+        verifiedAt={entry.data.verifiedAt}
+      />
+    )}
+
+    <div class="article-content prose" data-search-content>
+      <Content />
+    </div>
+
+    {(display.share ||
+      (display.updated &&
+        entry.data.updated &&
+        entry.data.updated.getTime() !== entry.data.date.getTime()) ||
+      (display.tags && entry.data.tags.length > 0)) && (
+      <div class="article-end" data-pagefind-ignore>
+        {display.tags &&
+          entry.data.tags.map((tag) => (
+            <a
+              class="tag"
+              href={href(
+                lang,
+                `${publicRoute('tags')}/${encodedSlug(tag)}/`,
+              )}
+            >
+              {labels.tags[tag] ?? tag}
+            </a>
+          ))}
+        {display.updated && (
+          <ArticleUpdated
+            lang={lang}
+            date={entry.data.date}
+            updated={entry.data.updated}
+          />
+        )}
+        {display.share && (
+          <ShareMenu
+            lang={lang}
+            title={entry.data.title}
+            description={entry.data.description}
+            image={shareImage}
+          />
+        )}
+      </div>
+    )}
+    {display.navigation && (
+      <nav
+        class="article-neighbors"
+        data-pagefind-ignore
+        aria-label={ui.adjacentArticles}
+      >
+        {older ? (
+          <a href={articleHref(older, lang)}>
+            <small>← {ui.older}</small>
+            <span>{older.data.title}</span>
+          </a>
+        ) : (
+          <span />
+        )}
+        {newer ? (
+          <a href={articleHref(newer, lang)}>
+            <small>{ui.newer} →</small>
+            <span>{newer.data.title}</span>
+          </a>
+        ) : (
+          <span />
+        )}
+      </nav>
+    )}
+  </article>
+</Layout>

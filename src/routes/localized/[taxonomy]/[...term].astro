@@ -1,0 +1,170 @@
+---
+import { pageLocale, routeLocales } from '../../../lib/i18n';
+import config from '../../../lib/config';
+import Layout from '../../../layouts/Layout.astro';
+import PostList from '../../../components/PostList.astro';
+import ThemeIcon from '../../../components/ThemeIcon.astro';
+import { contentImage } from '../../../lib/content-image';
+import ContentIntro from '../../../components/ContentIntro.astro';
+import {
+  taxonomy,
+  textEntriesFor,
+  encodedSlug,
+  taxonomyLabels,
+  isReferral,
+  type Entry,
+  type TextEntry,
+} from '../../../lib/content';
+import { referralIndustry } from '../../../lib/referral';
+import { t, href, localize } from '../../../lib/i18n';
+import { publicRoute } from '../../../lib/public-routes';
+import { absoluteUrl } from '../../../lib/seo';
+import type { Locale } from '../../../types/config';
+import { isRealTranslation } from '../../../lib/locale-routing';
+export async function getStaticPaths({
+  routePattern,
+}: import('astro').GetStaticPathsOptions) {
+  const paths = [];
+  for (const lang of routeLocales(routePattern))
+    for (const kind of ['categories', 'tags'] as const)
+      for (const group of await taxonomy(kind, lang, true))
+        paths.push({
+          params: { taxonomy: publicRoute(kind), term: group.slug },
+          props: {
+            posts: group.posts,
+            entry: group.entry,
+            hidden: group.hidden,
+          },
+        });
+  return paths;
+}
+interface Props {
+  posts: Entry[];
+  entry?: TextEntry;
+  hidden: boolean;
+}
+const lang = pageLocale(Astro.routePattern);
+const kind =
+  Astro.params.taxonomy === publicRoute('categories') ? 'categories' : 'tags';
+const term = Astro.params.term!;
+const ui = t(lang);
+const prefix = publicRoute(kind);
+const { posts, entry, hidden } = Astro.props;
+const label = entry?.data.title ?? term;
+
+const brandReferral =
+  kind === 'categories' ? posts.find((post) => isReferral(post)) : undefined;
+const industrySlug = brandReferral
+  ? referralIndustry(brandReferral.data)
+  : undefined;
+const labels = await taxonomyLabels(lang);
+const industryLabel = industrySlug
+  ? (labels.categories[industrySlug] ?? industrySlug)
+  : undefined;
+const alternatePaths: Partial<Record<Locale, string>> = {};
+const translationPaths: Partial<Record<Locale, string>> = {};
+for (const locale of config.site.locales) {
+  const other = entry
+    ? (await textEntriesFor(kind, locale)).find(
+        (other) => other.data._key === entry.data._key,
+      )
+    : undefined;
+  const target = href(
+    locale,
+    `${prefix}/${encodedSlug(other?.data.slug ?? term)}/`,
+  );
+  if (
+    (await taxonomy(kind, locale, true)).some(
+      (group) => group.slug === (other?.data.slug ?? term),
+    )
+  ) {
+    alternatePaths[locale] = target;
+    if (!entry || (other && isRealTranslation(other, locale)))
+      translationPaths[locale] = target;
+  }
+}
+---
+
+<Layout
+  lang={lang}
+  title={label}
+  description={entry?.data.description}
+  active={kind}
+  alternatePaths={alternatePaths}
+  translationPaths={translationPaths}
+  noindex={hidden || entry?.data.hidden || entry?.data.draft}
+  shareImage={
+    entry?.data.image
+      ? contentImage(
+          entry.data.image,
+          href(lang, `${prefix}/${encodedSlug(term)}/`),
+        )
+      : undefined
+  }
+  breadcrumbs={[
+    {
+      name: localize(config.text.tabs.search, lang),
+      url: absoluteUrl(href(lang)),
+    },
+    ...(industrySlug && industryLabel
+      ? [
+          {
+            name: industryLabel,
+            url: absoluteUrl(
+              href(
+                lang,
+                `${publicRoute('categories')}/${encodedSlug(industrySlug)}/`,
+              ),
+            ),
+          },
+        ]
+      : []),
+    {
+      name: kind === 'categories' ? ui.categoryTitle : ui.tagsTitle,
+      url: absoluteUrl(href(lang, `${prefix}/`)),
+    },
+    {
+      name: label,
+      url: absoluteUrl(href(lang, `${prefix}/${encodedSlug(term)}/`)),
+    },
+  ]}
+>
+  <div class="content-column">
+    <section
+      data-search-record={
+        entry && !hidden && !entry.data.hidden && !entry.data.draft
+          ? kind
+          : undefined
+      }
+      data-search-title={label}
+      data-search-description={entry?.data.description}
+    >
+      <a class="eyebrow taxonomy-back" href={href(lang, `${prefix}/`)}>
+        <ThemeIcon name="arrow-left" size={16} />
+        {ui[kind]}
+      </a>
+      {entry?.data.image && (
+        <img
+          class="article-cover taxonomy-detail-cover"
+          src={contentImage(
+            entry.data.image,
+            href(lang, `${prefix}/${encodedSlug(term)}/`),
+          )}
+          alt=""
+          width="1000"
+          height="560"
+        />
+      )}
+      <header class="page-heading taxonomy-heading">
+        <h1>{label}</h1>
+        {entry?.data.description && <p>{entry.data.description}</p>}
+        <p class="taxonomy-count">
+          {posts.length} {ui.articleCount}
+        </p>
+      </header>
+      <ContentIntro entry={entry} showCover={false} indexContent={false} />
+    </section>
+
+    <PostList entries={posts} lang={lang} />
+  </div>
+</Layout>

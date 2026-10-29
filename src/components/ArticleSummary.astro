@@ -1,0 +1,17 @@
+---
+import { t } from '../lib/i18n';
+import type { Locale } from '../types/config';
+
+interface Props {
+  lang: Locale;
+  html: string;
+}
+
+const { lang, html } = Astro.props;
+const ui = t(lang);
+---
+
+<section class="article-summary" aria-labelledby="article-summary-title">
+  <h2 id="article-summary-title">{ui.summaryTitle}</h2>
+  <div class="article-summary-body article-content prose" set:html={html} />
+</section>

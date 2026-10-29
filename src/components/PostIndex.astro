@@ -1,0 +1,159 @@
+---
+import config from '../lib/config';
+import Layout from '../layouts/Layout.astro';
+import PostList from './PostList.astro';
+import ThemeIcon from './ThemeIcon.astro';
+import ContentIntro from './ContentIntro.astro';
+import BuiltinHeading from './BuiltinHeading.astro';
+import { articlesFor, referralsFor, introFor } from '../lib/content';
+import { absoluteUrl } from '../lib/seo';
+import { t, href, localize } from '../lib/i18n';
+import { publicRoute } from '../lib/public-routes';
+import type { Locale } from '../types/config';
+interface Props {
+  lang: Locale;
+  page?: number;
+  kind?: 'posts' | 'referrals';
+}
+const { lang, page = 1, kind = 'posts' } = Astro.props;
+const route = kind === 'referrals' ? 'referrals' : 'posts';
+const prefix = publicRoute(route);
+const entries =
+  kind === 'referrals' ? await referralsFor(lang) : await articlesFor(lang);
+const count = (locale: Locale) =>
+  kind === 'referrals'
+    ? referralsFor(locale).then((items) => items.length)
+    : articlesFor(locale).then((items) => items.length);
+const pageSize = Math.max(1, config.posts.perPage);
+const pages = Math.max(1, Math.ceil(entries.length / pageSize));
+const current = entries.slice((page - 1) * pageSize, page * pageSize);
+const ui = t(lang);
+const intro = await introFor(route, lang);
+const title =
+  intro?.data.title ??
+  (kind === 'referrals' ? ui.referralsTitle : ui.postsTitle);
+const pageHref = (number: number) =>
+  href(
+    lang,
+    number === 1 ? `${prefix}/` : `${prefix}/page/${number}/`,
+  );
+const alternatePaths = Object.fromEntries(
+  (
+    await Promise.all(
+      config.site.locales.map(async (locale) => {
+        const total = Math.max(1, Math.ceil((await count(locale)) / pageSize));
+        return page <= total
+          ? [
+              [
+                locale,
+                href(
+                  locale,
+                  page === 1
+                    ? `${prefix}/`
+                    : `${prefix}/page/${page}/`,
+                ),
+              ] as [Locale, string],
+            ]
+          : [];
+      }),
+    )
+  ).flat(),
+);
+---
+
+<Layout
+  lang={lang}
+  title={page > 1 ? `${title} — ${page}/${pages}` : title}
+  description={intro?.data.description}
+  active={kind === 'referrals' ? 'referrals' : 'posts'}
+  alternatePaths={alternatePaths}
+  noindex={page > 1}
+  prevUrl={page > 1 ? pageHref(page - 1) : undefined}
+  nextUrl={page < pages ? pageHref(page + 1) : undefined}
+  breadcrumbs={[
+    {
+      name: localize(config.text.tabs.search, lang),
+      url: absoluteUrl(href(lang)),
+    },
+    { name: title, url: absoluteUrl(pageHref(1)) },
+    ...(page > 1
+      ? [{ name: `${page}/${pages}`, url: absoluteUrl(pageHref(page)) }]
+      : []),
+  ]}
+>
+  <div class="content-column">
+    <BuiltinHeading
+      title={title}
+      description={
+        intro?.data.description ??
+        `${entries.length} ${
+          kind === 'referrals' ? ui.referralCount : ui.articleCount
+        }`
+      }
+      eyebrow={kind === 'referrals' ? ui.referrals : ui.allPosts}
+      icon={kind === 'referrals' ? 'badge-percent' : 'files'}
+    />
+    {page === 1 && <ContentIntro entry={intro} />}
+    <PostList entries={current} lang={lang} />
+    {pages > 1 && (
+      <nav class="pagination" aria-label={ui.articlePagination}>
+        {page > 1 ? (
+          <a href={pageHref(page - 1)}>
+            <ThemeIcon name="chevron-left" size={16} />
+            {ui.previous}
+          </a>
+        ) : (
+          <span />
+        )}
+        <form
+          class="page-jump"
+          data-page-jump
+          data-current-page={page}
+          data-total-pages={pages}
+          data-first-page={pageHref(1)}
+          data-page-prefix={href(lang, `${prefix}/page/`)}
+          data-range-message={ui.pageRange}
+        >
+          <button
+            type="button"
+            data-page-edit
+            aria-label={ui.editPage}
+            data-tooltip={ui.editPage}
+          >
+            {page}
+          </button>
+          <input
+            data-page-input
+            type="text"
+            inputmode="numeric"
+            pattern="[0-9]+"
+            required
+            autocomplete="off"
+            aria-label={ui.jumpToPage}
+            data-tooltip={ui.jumpToPage}
+            value={page}
+            hidden
+          />
+          <span aria-hidden="true">/</span>
+          <a
+            class="page-last"
+            href={pageHref(pages)}
+            aria-label={ui.lastPage}
+            aria-current={page === pages ? 'page' : undefined}
+            data-tooltip={ui.lastPage}
+          >
+            {pages}
+          </a>
+        </form>
+        {page < pages ? (
+          <a href={pageHref(page + 1)}>
+            {ui.next}
+            <ThemeIcon name="chevron-right" size={16} />
+          </a>
+        ) : (
+          <span />
+        )}
+      </nav>
+    )}
+  </div>
+</Layout>
