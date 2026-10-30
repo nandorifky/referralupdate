@@ -3,7 +3,7 @@ title: 'Cara Verifikasi ShopeePay: Syarat, Langkah, dan Penyebab Gagal'
 slug: 'cara-verifikasi-shopeepay'
 date: 2026-10-21
 description: 'Langkah verifikasi akun ShopeePay dengan KTP dan selfie, plus penyebab paling umum verifikasi ditolak.'
-referral: true
+draft: 'true'
 summary: |
   Verifikasi ShopeePay hanya perlu dilakukan sekali dan menjadi syarat wajib sebelum cashback referral turun. Prosesnya terdiri dari unggah foto KTP, selfie, lalu pencocokan data. Sebagian besar kegagalan terjadi karena foto buram atau nama tidak sama persis dengan KTP.
 categories: ['shopeepay']
