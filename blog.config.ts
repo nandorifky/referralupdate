@@ -258,8 +258,8 @@ const config: BlogConfig = {
   },
   footer: {
     since: 2024,
-    author: 'Nando Rifky',
-    showAttribution: false,
+    author: 'Referral Update',
+    showAttribution: true,
     license: {
       label: 'CC BY-NC-SA 4.0',
       url: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',

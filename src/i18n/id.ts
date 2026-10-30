@@ -130,7 +130,7 @@ const messages = {
   referralVerified: 'Diverifikasi',
   statusActive: 'Aktif',
   statusExpired: 'Kedaluwarsa',
-  claimCode: 'Gunakan referral',
+  claimCode: 'Buka aplikasi',
   copyReferral: 'Salin kode',
   referralCopied: 'Kode tersalin',
   referralCopyFailed: 'Gagal menyalin. Salin manual.',
