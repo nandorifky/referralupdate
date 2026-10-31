@@ -3,5 +3,19 @@
   "framework": "astro",
   "installCommand": "corepack pnpm install --frozen-lockfile",
   "buildCommand": "corepack pnpm build",
-  "outputDirectory": "dist"
+  "outputDirectory": "dist",
+  "trailingSlash": true,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.referralupdate.com"
+        }
+      ],
+      "destination": "https://referralupdate.com/:path*",
+      "permanent": true
+    }
+  ]
 }

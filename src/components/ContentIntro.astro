@@ -29,7 +29,7 @@ const features = articleFeatures(entry?.data ?? {}, config.article);
     data-search-title={entry.data.title}
     data-search-description={entry.data.description}
   >
-    {features.math && !config.article.math && (
+    {features.math && entry?.data.math === true && (
       <link rel="stylesheet" href={katexStyles} />
     )}
     {showCover && image && (

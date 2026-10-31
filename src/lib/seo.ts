@@ -102,10 +102,10 @@ export function ogLocale(lang: Locale): string {
 
 export type Breadcrumb = { name: string; url: string };
 
-export function breadcrumbJsonLd(items: Breadcrumb[]) {
+export function breadcrumbJsonLd(items: Breadcrumb[], pageUrl: string) {
   return {
     '@type': 'BreadcrumbList',
-    '@id': `${items[0]?.url ?? absoluteUrl()}#breadcrumb`,
+    '@id': `${pageUrl}#breadcrumb`,
     itemListElement: items.map((item, index) => ({
       '@type': 'ListItem',
       position: index + 1,
@@ -259,7 +259,7 @@ export function pageJsonLd({
       organizationJsonLd(lang),
       personJsonLd(lang),
       page,
-      ...(breadcrumbs?.length ? [breadcrumbJsonLd(breadcrumbs)] : []),
+      ...(breadcrumbs?.length ? [breadcrumbJsonLd(breadcrumbs, url)] : []),
     ],
   };
 }

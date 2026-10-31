@@ -80,7 +80,8 @@ for (const locale of config.site.locales) {
   translationPaths={translationPaths}
   noindex={page.data.hidden || page.data.draft}
   article
-  pageType="article"
+  pageType="website"
+  math={page.data.math === true}
   publishedTime={page.data.date}
   modifiedTime={page.data.updated ?? page.data.date}
   breadcrumbs={[
@@ -112,6 +113,7 @@ for (const locale of config.site.locales) {
         alt={page.data.title}
         width="1000"
         height="560"
+        fetchpriority="high"
       />
     )}
     <header class="article-header">

@@ -69,7 +69,7 @@ const friends: FriendsConfig = [
         description:
           'SEO Specialist, pengembang web, dan penulis konten di balik Referral Update.',
         url: 'https://nandorifky.web.id/',
-        avatar: '/images/friends/stack.png',
+        avatar: '/images/friends/stack.webp',
       },
       {
         name: 'Notiska',
@@ -82,7 +82,7 @@ const friends: FriendsConfig = [
         description:
           'Perencana dan pencari referral program dari berbagai aplikasi.',
         url: '#!',
-        avatar: '/images/friends/astropaper-author.png',
+        avatar: '/images/friends/astropaper-author.webp',
       },
     ],
   },

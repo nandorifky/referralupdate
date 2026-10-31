@@ -191,9 +191,10 @@ const graphWithSilo =
                 ...node,
                 ...(brand && brandHref
                   ? {
-                      isPartOf: {
-                        '@id': `${absoluteUrl(brandHref)}#collection`,
-                      },
+                      isPartOf: [
+                        { '@id': `${absoluteUrl()}#website` },
+                        { '@id': `${absoluteUrl(brandHref)}#page` },
+                      ],
                     }
                   : {}),
                 ...(isReferral(entry)
@@ -228,6 +229,7 @@ const graphWithSilo =
   description={entry.data.description}
   article
   pageType="article"
+  math={entry.data.math === true}
   active={isReferral(entry) ? 'referrals' : 'posts'}
   publishedTime={entry.data.date}
   modifiedTime={modified}
@@ -257,6 +259,7 @@ const graphWithSilo =
         alt={entry.data.title}
         width="1000"
         height="560"
+        fetchpriority="high"
       />
     )}
     <header class="article-header">

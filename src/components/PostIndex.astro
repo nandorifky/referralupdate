@@ -108,7 +108,7 @@ const listSchema =
   description={intro?.data.description}
   active={kind === 'referrals' ? 'referrals' : 'posts'}
   alternatePaths={alternatePaths}
-  noindex={page > 1}
+  noindex={page > 1 || entries.length === 0}
   prevUrl={page > 1 ? pageHref(page - 1) : undefined}
   nextUrl={page < pages ? pageHref(page + 1) : undefined}
   breadcrumbs={breadcrumbs}

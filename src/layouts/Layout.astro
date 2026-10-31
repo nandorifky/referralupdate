@@ -40,6 +40,8 @@ interface Props {
   active?: string;
   noindex?: boolean;
   article?: boolean;
+  /** Load KaTeX styles; enable per page via content `math: true`. */
+  math?: boolean;
   shareImage?: string;
   alternatePaths?: Partial<Record<Locale, string>>;
   translationPaths?: Partial<Record<Locale, string>>;
@@ -64,6 +66,7 @@ const {
   active,
   noindex = false,
   article = false,
+  math = false,
   publishedTime,
   modifiedTime,
   section,
@@ -193,7 +196,7 @@ const pageAnimation =
   transition:animate="none"
 >
   <head>
-    {features.math && <link rel="stylesheet" href={katexStyles} />}
+    {features.math && math && <link rel="stylesheet" href={katexStyles} />}
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
