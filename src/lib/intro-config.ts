@@ -15,5 +15,9 @@ export function introPageSlug(
   const item = [...config.sidebar.items, ...config.sidebar.menu].find(
     (item) => item.type === 'builtin' && item.route === route && item.page,
   );
-  return item?.type === 'builtin' ? item.page : undefined;
+  if (item?.type === 'builtin') return item.page;
+  // Tags has no sidebar entry; its intro page uses the route name.
+  return introRoutes.includes(route as (typeof introRoutes)[number])
+    ? route
+    : undefined;
 }

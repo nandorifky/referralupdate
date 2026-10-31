@@ -2,10 +2,15 @@
 import { pageLocale } from '../../lib/i18n';
 import config from '../../lib/config';
 import ContentIntro from '../../components/ContentIntro.astro';
-import { introFor } from '../../lib/content';
+import {
+  introFor,
+  discoverableEntries,
+  articleHref,
+  isReferral,
+  type Entry,
+} from '../../lib/content';
 import Layout from '../../layouts/Layout.astro';
 import BuiltinHeading from '../../components/BuiltinHeading.astro';
-import { articlesFor, postHref, type Post } from '../../lib/content';
 import { t, href, dateLabel, localize } from '../../lib/i18n';
 import { publicRoute } from '../../lib/public-routes';
 import { absoluteUrl } from '../../lib/seo';
@@ -13,16 +18,16 @@ const lang = pageLocale(Astro.routePattern);
 const ui = t(lang);
 const intro = await introFor('archives', lang);
 const title = intro?.data.title ?? ui.archiveTitle;
-const posts = (await articlesFor(lang)).sort(
-  (a, b) => b.data.date.getTime() - a.data.date.getTime(),
-);
-const groups = new Map<string, Post[]>();
-for (const post of posts) {
+const entries = (await discoverableEntries(lang))
+  .filter((entry) => !(isReferral(entry) && entry.data.status === 'habis'))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const groups = new Map<string, Entry[]>();
+for (const entry of entries) {
   const year = new Intl.DateTimeFormat('en', {
     year: 'numeric',
     timeZone: config.site.timezone,
-  }).format(post.data.date);
-  groups.set(year, [...(groups.get(year) ?? []), post]);
+  }).format(entry.data.date);
+  groups.set(year, [...(groups.get(year) ?? []), entry]);
 }
 ---
 
@@ -31,7 +36,7 @@ for (const post of posts) {
   title={title}
   description={intro?.data.description}
   active="archives"
-  noindex={posts.length === 0}
+  noindex={entries.length === 0}
   breadcrumbs={[
     {
       name: localize(config.text.tabs.search, lang),
@@ -47,28 +52,28 @@ for (const post of posts) {
     <BuiltinHeading
       title={title}
       description={
-        intro?.data.description ?? `${posts.length} ${ui.articleCount}`
+        intro?.data.description ?? `${entries.length} ${ui.articleCount}`
       }
       eyebrow={ui.archives}
       icon="archive"
     />
     <ContentIntro entry={intro} />
-    {[...groups].map(([year, articles]) => (
+    {[...groups].map(([year, yearEntries]) => (
       <section class="archive-year" id={year}>
         <h2>
           {year}
           <span>
-            {articles.length} {ui.articleCount}
+            {yearEntries.length} {ui.articleCount}
           </span>
         </h2>
-        {articles.map((post) => (
+        {yearEntries.map((entry) => (
           <div class="archive-row">
-            <time datetime={post.data.date.toISOString()}>
-              {dateLabel(post.data.date, lang)
+            <time datetime={entry.data.date.toISOString()}>
+              {dateLabel(entry.data.date, lang)
                 .replace(year, '')
                 .replace(/^[\s,.]+/, '')}
             </time>
-            <a href={postHref(post, lang)}>{post.data.title}</a>
+            <a href={articleHref(entry, lang)}>{entry.data.title}</a>
           </div>
         ))}
       </section>
