@@ -5,8 +5,13 @@ import PostList from './PostList.astro';
 import ThemeIcon from './ThemeIcon.astro';
 import ContentIntro from './ContentIntro.astro';
 import BuiltinHeading from './BuiltinHeading.astro';
-import { articlesFor, referralsFor, introFor } from '../lib/content';
-import { absoluteUrl } from '../lib/seo';
+import {
+  articlesFor,
+  referralsFor,
+  introFor,
+  articleHref,
+} from '../lib/content';
+import { absoluteUrl, pageJsonLd } from '../lib/seo';
 import { t, href, localize } from '../lib/i18n';
 import { publicRoute } from '../lib/public-routes';
 import type { Locale } from '../types/config';
@@ -33,10 +38,7 @@ const title =
   intro?.data.title ??
   (kind === 'referrals' ? ui.referralsTitle : ui.postsTitle);
 const pageHref = (number: number) =>
-  href(
-    lang,
-    number === 1 ? `${prefix}/` : `${prefix}/page/${number}/`,
-  );
+  href(lang, number === 1 ? `${prefix}/` : `${prefix}/page/${number}/`);
 const alternatePaths = Object.fromEntries(
   (
     await Promise.all(
@@ -48,9 +50,7 @@ const alternatePaths = Object.fromEntries(
                 locale,
                 href(
                   locale,
-                  page === 1
-                    ? `${prefix}/`
-                    : `${prefix}/page/${page}/`,
+                  page === 1 ? `${prefix}/` : `${prefix}/page/${page}/`,
                 ),
               ] as [Locale, string],
             ]
@@ -59,6 +59,47 @@ const alternatePaths = Object.fromEntries(
     )
   ).flat(),
 );
+const breadcrumbs = [
+  {
+    name: localize(config.text.tabs.search, lang),
+    url: absoluteUrl(href(lang)),
+  },
+  { name: title, url: absoluteUrl(pageHref(1)) },
+  ...(page > 1
+    ? [{ name: `${page}/${pages}`, url: absoluteUrl(pageHref(page)) }]
+    : []),
+];
+const listSchema =
+  kind === 'referrals' && page === 1
+    ? (() => {
+        const url = absoluteUrl(pageHref(1));
+        const base = pageJsonLd({
+          lang,
+          url,
+          title,
+          description: intro?.data.description,
+          type: 'website',
+          breadcrumbs,
+        });
+        return {
+          ...base,
+          '@graph': [
+            ...base['@graph'],
+            {
+              '@type': 'ItemList',
+              '@id': `${url}#itemlist`,
+              numberOfItems: current.length,
+              itemListElement: current.map((entry, index) => ({
+                '@type': 'ListItem',
+                position: index + 1,
+                url: absoluteUrl(articleHref(entry, lang)),
+                name: entry.data.title,
+              })),
+            },
+          ],
+        };
+      })()
+    : undefined;
 ---
 
 <Layout
@@ -70,16 +111,8 @@ const alternatePaths = Object.fromEntries(
   noindex={page > 1}
   prevUrl={page > 1 ? pageHref(page - 1) : undefined}
   nextUrl={page < pages ? pageHref(page + 1) : undefined}
-  breadcrumbs={[
-    {
-      name: localize(config.text.tabs.search, lang),
-      url: absoluteUrl(href(lang)),
-    },
-    { name: title, url: absoluteUrl(pageHref(1)) },
-    ...(page > 1
-      ? [{ name: `${page}/${pages}`, url: absoluteUrl(pageHref(page)) }]
-      : []),
-  ]}
+  breadcrumbs={breadcrumbs}
+  schema={listSchema}
 >
   <div class="content-column">
     <BuiltinHeading

@@ -23,13 +23,22 @@ const files = (await walk('dist')).filter(
   (file) => !attachments.has(file.replaceAll('\\', '/').replace(/^dist\//, '')),
 );
 const excluded = new Set();
+const lastmod = new Map();
 const canonicalPattern = /<link\s+[^>]*rel="canonical"[^>]*href="([^"]+)"/;
+const modifiedPattern =
+  /<meta\s+[^>]*property="article:modified_time"[^>]*content="([^"]+)"/;
+const publishedPattern =
+  /<meta\s+[^>]*property="article:published_time"[^>]*content="([^"]+)"/;
 for (const file of files.filter((file) => file.endsWith('.html'))) {
   const html = await readFile(file, 'utf8');
+  const canonical = html.match(canonicalPattern)?.[1]?.replaceAll('&amp;', '&');
+  if (!canonical) continue;
+  const modified =
+    html.match(modifiedPattern)?.[1] ?? html.match(publishedPattern)?.[1];
+  if (modified) lastmod.set(canonical, modified);
   if (/<meta\s+[^>]*name="robots"[^>]*content="noindex/.test(html)) {
     if (/<meta\s+[^>]*http-equiv="refresh"/i.test(html)) continue;
-    const canonical = html.match(canonicalPattern)?.[1];
-    if (canonical) excluded.add(canonical.replaceAll('&amp;', '&'));
+    excluded.add(canonical);
   }
 }
 // @astrojs/sitemap cannot read rendered page-level robots metadata. Remove unlisted pages
@@ -40,7 +49,16 @@ for (const file of files.filter((file) => /sitemap-\d+\.xml$/.test(file))) {
     const url = entry
       .match(/<loc>([\s\S]*?)<\/loc>/)?.[1]
       ?.replaceAll('&amp;', '&');
-    return excluded.has(url) ? '' : entry;
+    if (!url || excluded.has(url)) return '';
+    const modified = lastmod.get(url);
+    if (!modified) return entry;
+    // Replace any build-time lastmod with the page's real article timestamp.
+    return entry
+      .replace(/<lastmod>[\s\S]*?<\/lastmod>/, '')
+      .replace(
+        /(<loc>[\s\S]*?<\/loc>)/,
+        `$1\n    <lastmod>${modified}</lastmod>`,
+      );
   });
   await writeFile(file, filtered);
 }

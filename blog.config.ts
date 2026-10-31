@@ -35,11 +35,12 @@ const config: BlogConfig = {
   text: {
     siteDescription:
       'Referral Update adalah website direktori kode referral tervalidasi dan diperbarui secara berkala dengan informasi sesuai dengan syarat dan ketentuan masing-masing program. Temukan kode referral terbaru untuk berbagai platform di sini.',
+    homeTitle: 'Kode Referral Tervalidasi Terbaru',
     tabs: {
       search: 'Cari',
       posts: 'Artikel',
     },
-    homeHeading: 'Cari kode referral apa pun yang Anda butuhkan di sini.',
+    homeHeading: 'Kode Referral Terbaru dan Tervalidasi',
     searchHeading: 'Masukkan kata kunci untuk menemukan artikel',
     searchPlaceholder: 'Misal, "kode referral X"',
     notFoundMessage: 'Halaman yang Anda cari tidak ditemukan.',
@@ -48,6 +49,7 @@ const config: BlogConfig = {
   },
   seo: {
     robots: 'index,follow,max-image-preview:large',
+    defaultImage: '/og-default.png',
     keywords: 'referral update, kode referral',
     twitter: {},
   },

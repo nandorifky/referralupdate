@@ -41,7 +41,9 @@ export async function getStaticPaths({
   routePattern,
 }: import('astro').GetStaticPathsOptions) {
   const paths = [];
-  const referralRoute = routePattern.split('/').includes(publicRoute('referrals'));
+  const referralRoute = routePattern
+    .split('/')
+    .includes(publicRoute('referrals'));
   for (const lang of routeLocales(routePattern)) {
     const entries = referralRoute
       ? await referralsFor(lang, true)
@@ -79,9 +81,7 @@ const labels = await taxonomyLabels(lang);
 const { Content, headings } = await render(entry);
 const discoverable = canDiscover(entry.data);
 const otherEntries = (
-  isReferral(entry)
-    ? await referralsFor(lang)
-    : await articlesFor(lang)
+  isReferral(entry) ? await referralsFor(lang) : await articlesFor(lang)
 )
   .filter((other) => canDiscover(other.data))
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
@@ -116,10 +116,19 @@ const brand = isReferral(entry)
   ? referralBrand(entry.data)
   : articleBrand(entry.data);
 // Silo relations feed structured data only; readers see ordinary articles.
-const linkedReferral = isReferral(entry) ? undefined : await referralFor(entry, lang);
+const linkedReferral = isReferral(entry)
+  ? undefined
+  : await referralFor(entry, lang);
 const supports = isReferral(entry) ? await supportsFor(entry, lang) : [];
 const industry = isReferral(entry) ? referralIndustry(entry.data) : undefined;
 const expired = isReferral(entry) && entry.data.status === 'habis';
+const modified =
+  entry.data.updated ??
+  (isReferral(entry) && entry.data.verifiedAt
+    ? new Date(
+        Math.max(entry.data.date.getTime(), entry.data.verifiedAt.getTime()),
+      )
+    : entry.data.date);
 const brandHref = brand
   ? href(lang, `${publicRoute('categories')}/${encodedSlug(brand)}/`)
   : undefined;
@@ -221,7 +230,7 @@ const graphWithSilo =
   pageType="article"
   active={isReferral(entry) ? 'referrals' : 'posts'}
   publishedTime={entry.data.date}
-  modifiedTime={entry.data.updated ?? entry.data.date}
+  modifiedTime={modified}
   section={brand ?? entry.data.categories[0]}
   tags={entry.data.tags}
   breadcrumbs={breadcrumbs}
@@ -318,10 +327,7 @@ const graphWithSilo =
           entry.data.tags.map((tag) => (
             <a
               class="tag"
-              href={href(
-                lang,
-                `${publicRoute('tags')}/${encodedSlug(tag)}/`,
-              )}
+              href={href(lang, `${publicRoute('tags')}/${encodedSlug(tag)}/`)}
             >
               {labels.tags[tag] ?? tag}
             </a>

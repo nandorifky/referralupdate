@@ -56,7 +56,9 @@ export function seoImage(
         );
   if (!absolute) return undefined;
   const generated =
-    /\.png$/i.test(absolute) && /\/(?:page-)?og\/[^/]+\.png$/i.test(absolute);
+    /\.png$/i.test(absolute) &&
+    (/\/(?:page-)?og\/[^/]+\.png$/i.test(absolute) ||
+      /\/og-default\.png$/i.test(absolute));
   const size = generated ? KNOWN_SIZES['.png'] : undefined;
   return {
     url: absolute,
@@ -117,6 +119,10 @@ function personId(): string {
   return `${absoluteUrl()}#person`;
 }
 
+function organizationId(): string {
+  return `${absoluteUrl()}#organization`;
+}
+
 function webSiteId(): string {
   return `${absoluteUrl()}#website`;
 }
@@ -137,6 +143,24 @@ export function personJsonLd(lang: Locale) {
   };
 }
 
+/** Brand-level identity; the site publishes as an organization, not a person. */
+export function organizationJsonLd(lang: Locale) {
+  const socials = config.author.socials
+    .map((social) => social.href)
+    .filter((href) => /^https?:/i.test(href));
+  const logo = /^https?:/i.test(config.author.avatar)
+    ? config.author.avatar
+    : absoluteUrl(config.author.avatar);
+  return {
+    '@type': 'Organization',
+    '@id': organizationId(),
+    name: localize(config.site.title, lang),
+    url: absoluteUrl(),
+    logo: { '@type': 'ImageObject', url: logo },
+    ...(socials.length ? { sameAs: socials } : {}),
+  };
+}
+
 export function webSiteJsonLd(lang: Locale) {
   return {
     '@type': 'WebSite',
@@ -145,7 +169,7 @@ export function webSiteJsonLd(lang: Locale) {
     name: localize(config.site.title, lang),
     description: localize(config.text.siteDescription, lang),
     inLanguage: lang,
-    publisher: { '@id': personId() },
+    publisher: { '@id': organizationId() },
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -212,7 +236,7 @@ export function pageJsonLd({
           datePublished: publishedTime?.toISOString(),
           dateModified: (modifiedTime ?? publishedTime)?.toISOString(),
           author: { '@id': personId() },
-          publisher: { '@id': personId() },
+          publisher: { '@id': organizationId() },
           ...(section ? { articleSection: section } : {}),
           ...(tags?.length ? { keywords: tags.join(', ') } : {}),
           ...(image?.url
@@ -232,6 +256,7 @@ export function pageJsonLd({
     '@context': 'https://schema.org',
     '@graph': [
       webSiteJsonLd(lang),
+      organizationJsonLd(lang),
       personJsonLd(lang),
       page,
       ...(breadcrumbs?.length ? [breadcrumbJsonLd(breadcrumbs)] : []),

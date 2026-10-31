@@ -77,6 +77,8 @@ export interface BlogConfig {
   };
   text: {
     siteDescription: Localized;
+    /** Short homepage title used in the document title and social cards. */
+    homeTitle: Localized;
     homeHeading: Localized;
     tabs: { search: Localized; posts: Localized };
     searchHeading: Localized;
