@@ -253,6 +253,7 @@ async function createReferral() {
     { label: 'Diskon' },
     { label: 'Poin' },
     { label: 'Komisi' },
+    { label: 'Promo' }
   ]);
   const benefitType = benefitTypeOpt.label.toLowerCase();
 
