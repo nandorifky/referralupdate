@@ -33,6 +33,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "new": "node scripts/new.mjs",
+    "new:content": "node tools/new-content.mjs",
     "docs:dev": "pnpm --filter @bloggpt/docs dev",
     "docs:build": "pnpm --filter @bloggpt/docs build",
     "docs:preview": "pnpm --filter @bloggpt/docs preview",

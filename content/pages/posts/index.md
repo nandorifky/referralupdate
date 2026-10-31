@@ -1,9 +1,6 @@
 ---
-title: 'Artikel Pendukung'
+title: 'Baca Artikel Terbaru'
 slug: 'posts'
-description: 'Panduan verifikasi, tips penggunaan, dan penyelesaian masalah untuk kode referral.'
+description: 'Dapatkan informasi terbaru terkait panduan verifikasi, review aplikasi, hingga perbandingan aplikasi'
 ---
-
-Artikel pendukung memberikan bantuan praktis seputar penggunaan kode referral. Setiap artikel membahas langkah-langkah spesifik, syarat yang perlu dipenuhi, dan solusi untuk kendala umum.
-
-Baca artikel utama (kode referral) terlebih dahulu untuk memahami bonus dan ketentuan program secara keseluruhan. Artikel pendukung melengkapi informasi tersebut dengan detail teknis dan troubleshooting.
+ 

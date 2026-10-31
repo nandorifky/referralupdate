@@ -34,12 +34,12 @@ const config: BlogConfig = {
   },
   text: {
     siteDescription:
-      'Referral Update membagikan kode referral milik tim editorial yang mengikuti program resmi berbagai platform. Temukan informasi bonus, syarat penggunaan, dan hasil validasi kode yang diperbarui secara berkala.',
+      'Referral Update adalah website direktori kode referral tervalidasi dan diperbarui secara berkala dengan informasi sesuai dengan syarat dan ketentuan masing-masing program. Temukan kode referral terbaru untuk berbagai platform di sini.',
     tabs: {
-      search: 'Halo',
+      search: 'Cari',
       posts: 'Artikel',
     },
-    homeHeading: 'Kode referral apa yang ingin Anda temukan hari ini?',
+    homeHeading: 'Cari kode referral apa pun yang Anda butuhkan di sini.',
     searchHeading: 'Masukkan kata kunci untuk menemukan artikel',
     searchPlaceholder: 'Misal, "kode referral X"',
     notFoundMessage: 'Halaman yang Anda cari tidak ditemukan.',
@@ -52,8 +52,8 @@ const config: BlogConfig = {
     twitter: {},
   },
   posts: {
-    perPage: 5,
-    homeLimit: 4,
+    perPage: 10,
+    homeLimit: 5,
     menuLimit: 12, // Plus-menu articles; use 99999 to include all.
     randomLimit: 12, // Independent candidate count for the random button and /random.
     pathPrefix: '', // Optional date directory, e.g. [year]/ or [year]/[month]/.

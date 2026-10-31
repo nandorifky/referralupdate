@@ -4,6 +4,7 @@ slug: 'kode-referral-shopeepay-ditolak'
 date: 2026-10-22
 description: 'Tujuh penyebab kode referral ShopeePay ditolak dan langkah perbaikan yang bisa dicoba sendiri.'
 draft: true
+referral: true
 summary: |
   Kode referral ShopeePay paling sering ditolak karena akun atau nomor telepon sudah pernah terdaftar, kode kedaluwarsa, atau kuota program habis. Sebagian besar kasus tidak bisa diperbaiki dari sisi pengguna, tetapi beberapa masih bisa diselamatkan dengan mengganti nomor atau menyelesaikan verifikasi lebih dulu.
 categories: ['shopeepay']

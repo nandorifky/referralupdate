@@ -1,7 +1,7 @@
 ---
 title: 'Kode Referral Terbaru'
 slug: 'kode-referral'
-description: 'Temukan kode referral terbaru dari tim editorial dengan bonus dan ketentuan yang jelas.'
+description: 'Kumpulan kode referral terbaru dari berbagai platform, dapatkan bonus sesuai dengan event yang sedang berlangsung'
 ---
 
 Kode referral di sini dikelola langsung oleh tim editorial Referral Update. Setiap kode diverifikasi dan diperbarui secara berkala sesuai dengan ketentuan program resmi dari masing-masing platform.
