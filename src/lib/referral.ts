@@ -13,6 +13,7 @@ export const benefitTypes = [
   'saldo',
   'poin',
   'komisi',
+  'promo',
 ] as const;
 export type BenefitType = (typeof benefitTypes)[number];
 
